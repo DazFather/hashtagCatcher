@@ -1,4 +1,5 @@
 github.com/DazFather/parrbot v0.0.0-20220626102807-615574b775fd h1:OphruH/+CdEP7g0oyvEQba2zQkl1vgDVtwVBn0CES0Y=
 github.com/DazFather/parrbot v0.0.0-20220626102807-615574b775fd/go.mod h1:6ynM4+/Rac38mC0g8cxv8gimB2cPUYUbk55L5MtykbU=
+github.com/NicoNex/echotron/v3 v3.18.0/go.mod h1:0PcVrCCcHZx/4XfwbGSkUYgfMkXuehw4xiZpxp1EkDU=
 github.com/NicoNex/echotron/v3 v3.19.0 h1:I63l3czMF2IW3AhtUcQ3sn3lM2LQpxdk9JJJYLZFvYU=
 github.com/NicoNex/echotron/v3 v3.19.0/go.mod h1:0PcVrCCcHZx/4XfwbGSkUYgfMkXuehw4xiZpxp1EkDU=
