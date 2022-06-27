@@ -11,7 +11,7 @@ import (
 )
 
 // Map hashtag -> times used
-var trending = make(map[string]int, 0)
+var trending = make(map[int64]map[string]int, 0)
 
 func main() {
 	// Define the list of commands of the bot
@@ -34,7 +34,7 @@ func main() {
 			Trigger:     "/restart",
 			ReplyAt:     message.MESSAGE,
 			CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
-				trending = make(map[string]int, 0)
+				trending = make(map[int64]map[string]int, 0)
 				return message.Text{"Counter has been resetted", nil}
 			},
 		},
@@ -55,29 +55,53 @@ func startHandler(bot *robot.Bot, update *message.Update) message.Any {
 
 // Message hashtags extractor
 func messageHandler(bot *robot.Bot, update *message.Update) message.Any {
-	for _, tag := range extractHashtags(update.Message.Text) {
-		trending[tag]++
+	chatID := extractGroupID(update.Message)
+	if chatID == nil {
+		return nil
+	}
+
+	tags := extractHashtags(update.Message.Text)
+	if tags == nil || len(tags) == 0 {
+		return nil
+	}
+
+	if trending[*chatID] == nil {
+		trending[*chatID] = make(map[string]int)
+	}
+	for _, tag := range tags {
+		trending[*chatID][tag]++
 	}
 	return nil
 }
 
+func extractGroupID(msg *message.UpdateMessage) *int64 {
+	if msg == nil || msg.Chat == nil {
+		return nil
+	}
+	return &msg.Chat.ID
+}
+
 // Show trending hashtags
 func showHandler(bot *robot.Bot, update *message.Update) message.Any {
-	var (
-		keys = make([]string, 0, len(trending))
-		msg  = "🔥 Trending hashtag:\n\n"
-	)
+	var trend map[string]int
 
-	for key := range trending {
-		keys = append(keys, key)
+	if chatID := extractGroupID(update.Message); chatID == nil {
+		return message.Text{"You are not in a group", nil}
+	} else if trend = trending[*chatID]; trend == nil || len(trend) == 0 {
+		return message.Text{"No hashtag used in this group", nil}
 	}
 
+	keys := make([]string, 0, len(trend))
+	for key := range trend {
+		keys = append(keys, key)
+	}
 	sort.SliceStable(keys, func(i, j int) bool {
-		return trending[keys[i]] > trending[keys[j]]
+		return trend[keys[i]] > trend[keys[j]]
 	})
 
+	msg := "🔥 Trending hashtag:\n\n"
 	for i, tag := range keys {
-		msg += fmt.Sprint(i+1, " ", tag, " - used: ", trending[tag], "\n")
+		msg += fmt.Sprint(i+1, " ", tag, " - used: ", trend[tag], "\n")
 	}
 	return message.Text{msg, nil}
 }
