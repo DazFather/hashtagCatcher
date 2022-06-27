@@ -35,12 +35,9 @@ func main() {
 		},
 		{
 			Description: "Reset saved trending hashtags",
-			Trigger:     "/restart",
+			Trigger:     "/reset",
 			ReplyAt:     message.MESSAGE,
-			CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
-				trending = make(map[int64]map[string]int, 0)
-				return message.Text{"Counter has been resetted", nil}
-			},
+			CallFunc: 	 resetHandler,
 		},
 		helpHandler.UseMenu("Help menu", "/help"),
 	}
@@ -76,6 +73,15 @@ func messageHandler(bot *robot.Bot, update *message.Update) message.Any {
 		trending[*chatID][tag]++
 	}
 	return nil
+}
+
+func resetHandler(bot *robot.Bot, update *message.Update) message.Any {
+	chatID := extractGroupID(update.Message)
+	if chatID == nil {
+		return message.Text{"You are not in a group", nil}
+	}
+	trending[*chatID] = make(map[string]int)
+	return message.Text{"Counter has been resetted", nil}
 }
 
 func extractGroupID(msg *message.UpdateMessage) *int64 {
