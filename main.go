@@ -10,8 +10,12 @@ import (
 	"github.com/DazFather/parrbot/tgui"
 )
 
-// Map hashtag -> times used
-var trending = make(map[int64]map[string]int, 0)
+var (
+	// Map hashtag -> times used
+	trending = make(map[int64]map[string]int, 0)
+	// Convert number between 0 and 10 into their emoji
+	number = [11]string{"0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"}
+)
 
 func main() {
 	// Define the list of commands of the bot
@@ -83,14 +87,16 @@ func extractGroupID(msg *message.UpdateMessage) *int64 {
 
 // Show trending hashtags
 func showHandler(bot *robot.Bot, update *message.Update) message.Any {
-	var trend map[string]int
 
+	// controls and set trend to the trending hashtags of the current group chat
+	var trend map[string]int
 	if chatID := extractGroupID(update.Message); chatID == nil {
 		return message.Text{"You are not in a group", nil}
 	} else if trend = trending[*chatID]; trend == nil || len(trend) == 0 {
 		return message.Text{"No hashtag used in this group", nil}
 	}
 
+	// Sort the trending hashtag
 	keys := make([]string, 0, len(trend))
 	for key := range trend {
 		keys = append(keys, key)
@@ -99,24 +105,34 @@ func showHandler(bot *robot.Bot, update *message.Update) message.Any {
 		return trend[keys[i]] > trend[keys[j]]
 	})
 
+	// Take the first 10 results
+	if len(keys) > 10 {
+		keys = keys[:10]
+	}
+
+	// Build the final message
 	msg := "🔥 Trending hashtag:\n\n"
 	for i, tag := range keys {
-		msg += fmt.Sprint(i+1, " ", tag, " - used: ", trend[tag], "\n")
+		msg += fmt.Sprint(number[i+1], " ", tag, " - used: ", trend[tag], "\n")
 	}
 	return message.Text{msg, nil}
 }
 
 func extractHashtags(text string) (tags []string) {
+	// search hashtag using regex and retive a list of indexes for the results
 	pattern := regexp.MustCompile(`#\w+`)
 	var found = pattern.FindAllStringIndex(text, -1)
 	if found == nil {
 		return
 	}
 
+	// Check if the message start with an hashtag
 	if startAt := found[0][0]; startAt == 0 {
 		tags = append(tags, text[startAt:found[0][1]])
 		found = found[1:]
 	}
+
+	// Check for each result found if berofore "#" there is a white space
 	for _, position := range found {
 		min, max := position[0], position[1]
 		if match, _ := regexp.MatchString(`\s`, string(text[min-1])); match {
