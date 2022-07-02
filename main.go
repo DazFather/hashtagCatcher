@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"fmt"
 	"regexp"
 	"sort"
@@ -133,7 +132,7 @@ func startHandler(bot *robot.Bot, update *message.Update) message.Any {
 	var chatID *int64 = extractGroupID(update.Message)
 
 	// Private chat: Send welcome message
-	if chatID == nil {
+	if update.Message.Chat.Type == "private" {
 		sosPage := tgui.InlineButton{Text: "🆘 How to use me", CallbackData: "/help"}
 		m := message.Text{"🦜 Welcome!", nil}
 		m.ClipInlineKeyboard([][]tgui.InlineButton{{sosPage}})
@@ -141,9 +140,10 @@ func startHandler(bot *robot.Bot, update *message.Update) message.Any {
 	}
 
 	// Group chat: start listening for hashtags
-	if !isFromAdmin(*update.Message, *chatID) {
+	if !isFromAdmin(*update.Message) {
 		return nil
 	}
+
 	info := trending[*chatID]
 	if info == nil {
 		info = new(ChatInfo)
@@ -183,7 +183,7 @@ func resetHandler(bot *robot.Bot, update *message.Update) message.Any {
 	}
 
 	// Check if sending user is authorized
-	if !isFromAdmin(*update.Message, *chatID) {
+	if !isFromAdmin(*update.Message) {
 		return nil
 	}
 
@@ -203,11 +203,16 @@ func extractGroupID(msg *message.UpdateMessage) *int64 {
 	return &msg.Chat.ID
 }
 
-func isFromAdmin(msg message.UpdateMessage, groupID int64) bool {
-	res, err := message.GetAPI().GetChatMember(groupID, msg.From.ID)
-	if err != nil {
-		log.Fatal("Error douring isFromAdmin:", err)
+func isFromAdmin(msg message.UpdateMessage) bool {
+	if msg.Chat == nil || msg.From == nil || msg.Chat.ID == msg.From.ID {
+		return false
 	}
+
+	res, err := message.GetAPI().GetChatMember(msg.Chat.ID, msg.From.ID)
+	if err != nil {
+		return false
+	}
+
 	return res.Result.CanChangeInfo
 }
 
@@ -220,7 +225,7 @@ func showHandler(bot *robot.Bot, update *message.Update) message.Any {
 	}
 
 	// Check if sending user is authorized
-	if !isFromAdmin(*update.Message, *chatID) {
+	if !isFromAdmin(*update.Message) {
 		return nil
 	}
 
