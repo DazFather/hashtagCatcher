@@ -143,18 +143,27 @@ func startHandler(bot *robot.Bot, update *message.Update) message.Any {
 	if !isFromAdmin(*update.Message) {
 		return nil
 	}
+	watchGroup(*chatID, true)
 
-	info := trending[*chatID]
+	return message.Text{"Group setted!👌 Now I will start catching all the #hashtags for you", nil}
+}
+
+func watchGroup(groupID int64, autoReset bool) {
+	var info *ChatInfo = trending[groupID]
 	if info == nil {
 		info = new(ChatInfo)
-		trending[*chatID] = info
+		trending[groupID] = info
 	}
+
+	if !autoReset {
+		return
+	}
+
 	info.SetAutoReset(RESET_TIME, func(info ChatInfo) {
 		if msg := buildTrendingMessage(info); msg != nil {
-			msg.Send(*chatID)
+			msg.Send(groupID)
 		}
 	})
-	return message.Text{"Group setted!👌 Now I will start catching all the #hashtags for you", nil}
 }
 
 // Message hashtags extractor
@@ -167,8 +176,9 @@ func messageHandler(bot *robot.Bot, update *message.Update) message.Any {
 
 	// Extract the hashtags from message and save them on ChatInfo of current group
 	tags := extractHashtags(update.Message.Text)
-	if tags != nil && len(tags) > 0 {
-		trending[*chatID].Save(tags...)
+
+	if watcher := trending[*chatID]; watcher != nil {
+		watcher.Save(tags...)
 	}
 
 	return nil
@@ -188,8 +198,8 @@ func resetHandler(bot *robot.Bot, update *message.Update) message.Any {
 	}
 
 	// If ChatInfo for current group is available then stop auto reset
-	if info := trending[*chatID]; info != nil {
-		info.StopAutoReset()
+	if watcher := trending[*chatID]; watcher != nil {
+		watcher.StopAutoReset()
 		return message.Text{"Counter has been resetted. Use /start to turn auto-reset on", nil}
 	}
 
@@ -213,7 +223,7 @@ func isFromAdmin(msg message.UpdateMessage) bool {
 		return false
 	}
 
-	return res.Result.CanChangeInfo
+	return res.Result.Status == "creator" || res.Result.Status == "administrator"
 }
 
 // Show trending hashtags
