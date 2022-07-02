@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"fmt"
 	"regexp"
 	"sort"
@@ -140,6 +141,9 @@ func startHandler(bot *robot.Bot, update *message.Update) message.Any {
 	}
 
 	// Group chat: start listening for hashtags
+	if !isFromAdmin(*update.Message, *chatID) {
+		return nil
+	}
 	info := trending[*chatID]
 	if info == nil {
 		info = new(ChatInfo)
@@ -178,6 +182,11 @@ func resetHandler(bot *robot.Bot, update *message.Update) message.Any {
 		return message.Text{"You are not in a group", nil}
 	}
 
+	// Check if sending user is authorized
+	if !isFromAdmin(*update.Message, *chatID) {
+		return nil
+	}
+
 	// If ChatInfo for current group is available then stop auto reset
 	if info := trending[*chatID]; info != nil {
 		info.StopAutoReset()
@@ -194,12 +203,25 @@ func extractGroupID(msg *message.UpdateMessage) *int64 {
 	return &msg.Chat.ID
 }
 
+func isFromAdmin(msg message.UpdateMessage, groupID int64) bool {
+	res, err := message.GetAPI().GetChatMember(groupID, msg.From.ID)
+	if err != nil {
+		log.Fatal("Error douring isFromAdmin:", err)
+	}
+	return res.Result.CanChangeInfo
+}
+
 // Show trending hashtags
 func showHandler(bot *robot.Bot, update *message.Update) message.Any {
 	// Get the chatID of the current group chat
 	chatID := extractGroupID(update.Message)
 	if chatID == nil {
 		return message.Text{"You are not in a group", nil}
+	}
+
+	// Check if sending user is authorized
+	if !isFromAdmin(*update.Message, *chatID) {
+		return nil
 	}
 
 	// use the ChatInfo to build the message that display the top 10 trending hashtags
