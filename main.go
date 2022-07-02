@@ -4,20 +4,101 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/DazFather/parrbot/message"
 	"github.com/DazFather/parrbot/robot"
 	"github.com/DazFather/parrbot/tgui"
 )
 
+// Set default auto-reset of hashtags time to 24 Hours
+const RESET_TIME time.Duration = 24 * time.Hour
+
+type ChatInfo struct {
+	hashtags map[string]int // Map hashtag -> times used
+	resetter *time.Ticker   // function that will loop causing the hashtag to reset
+	stop     bool
+}
+
+// Get the firsts 'cap' most used hashtags
+func (i ChatInfo) Trending(cap int) (trend []string) {
+	var tags map[string]int = i.hashtags
+	if tags == nil {
+		return
+	}
+
+	// Sort the trending hashtag
+	trend = make([]string, 0, len(tags))
+	for tag := range tags {
+		trend = append(trend, tag)
+	}
+	sort.SliceStable(trend, func(i, j int) bool {
+		return tags[trend[i]] > tags[trend[j]]
+	})
+
+	// Take the first 10 results
+	if len(trend) > cap {
+		trend = trend[:cap]
+	}
+	return
+}
+
+// Save one or more tags on the hashtags map and increase used conuter
+func (i *ChatInfo) Save(tags ...string) {
+	if len(tags) == 0 {
+		return
+	}
+
+	if i.hashtags == nil {
+		i.hashtags = make(map[string]int, len(tags))
+	}
+
+	for _, tag := range tags {
+		i.hashtags[tag]++
+	}
+}
+
+// Set auto-reset of hashtags for a given time interval and call given function before reset
+func (i *ChatInfo) SetAutoReset(interval time.Duration, beforeReset func(ChatInfo)) {
+	if i.resetter != nil {
+		i.resetter.Reset(interval)
+	} else {
+		i.resetter = time.NewTicker(interval)
+	}
+
+	go func() {
+		defer i.resetter.Stop()
+
+		for range i.resetter.C {
+			if i.stop {
+				i.stop = false
+				break
+			}
+			go beforeReset(*i)
+			i.hashtags = nil
+		}
+
+	}()
+
+	return
+}
+
+// Stop auto-reset and clear saved hashtags
+func (i *ChatInfo) StopAutoReset() {
+	i.stop = true
+	i.hashtags = nil
+}
+
 var (
-	// Map hashtag -> times used
-	trending = make(map[int64]map[string]int, 0)
+	// Map groupID -> ChatInfo
+	trending = map[int64]*ChatInfo{}
 	// Convert number between 0 and 10 into their emoji
 	number = [11]string{"0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"}
 )
 
 func main() {
+
 	// Define the list of commands of the bot
 	var commandList = []robot.Command{
 		{ReplyAt: message.MESSAGE, CallFunc: messageHandler},
@@ -34,10 +115,10 @@ func main() {
 			CallFunc:    showHandler,
 		},
 		{
-			Description: "Reset saved trending hashtags",
+			Description: "Reset saved trending hashtags and turn off auto-reset",
 			Trigger:     "/reset",
 			ReplyAt:     message.MESSAGE,
-			CallFunc: 	 resetHandler,
+			CallFunc:    resetHandler,
 		},
 		helpHandler.UseMenu("Help menu", "/help"),
 	}
@@ -47,41 +128,63 @@ func main() {
 
 // Start function
 func startHandler(bot *robot.Bot, update *message.Update) message.Any {
-	sosPage := tgui.InlineButton{Text: "🆘 How to use me", CallbackData: "/help"}
+	// Get the chatID of the current group chat
+	var chatID *int64 = extractGroupID(update.Message)
 
-	var msg = message.Text{"🦜 Welcome!", nil}
-	msg.ClipInlineKeyboard([][]tgui.InlineButton{{sosPage}})
-	return msg
+	// Private chat: Send welcome message
+	if chatID == nil {
+		sosPage := tgui.InlineButton{Text: "🆘 How to use me", CallbackData: "/help"}
+		m := message.Text{"🦜 Welcome!", nil}
+		m.ClipInlineKeyboard([][]tgui.InlineButton{{sosPage}})
+		return m
+	}
+
+	// Group chat: start listening for hashtags
+	info := trending[*chatID]
+	if info == nil {
+		info = new(ChatInfo)
+		trending[*chatID] = info
+	}
+	info.SetAutoReset(RESET_TIME, func(info ChatInfo) {
+		if msg := buildTrendingMessage(info); msg != nil {
+			msg.Send(*chatID)
+		}
+	})
+	return message.Text{"Group setted!👌 Now I will start catching all the #hashtags for you", nil}
 }
 
 // Message hashtags extractor
 func messageHandler(bot *robot.Bot, update *message.Update) message.Any {
+	// Get the chatID of the current group chat
 	chatID := extractGroupID(update.Message)
 	if chatID == nil {
 		return nil
 	}
 
+	// Extract the hashtags from message and save them on ChatInfo of current group
 	tags := extractHashtags(update.Message.Text)
-	if tags == nil || len(tags) == 0 {
-		return nil
+	if tags != nil && len(tags) > 0 {
+		trending[*chatID].Save(tags...)
 	}
 
-	if trending[*chatID] == nil {
-		trending[*chatID] = make(map[string]int)
-	}
-	for _, tag := range tags {
-		trending[*chatID][tag]++
-	}
 	return nil
 }
 
+// Reset the counter and disable auto-reset of hashtags
 func resetHandler(bot *robot.Bot, update *message.Update) message.Any {
+	// Get the chatID of the current group chat
 	chatID := extractGroupID(update.Message)
 	if chatID == nil {
 		return message.Text{"You are not in a group", nil}
 	}
-	trending[*chatID] = make(map[string]int)
-	return message.Text{"Counter has been resetted", nil}
+
+	// If ChatInfo for current group is available then stop auto reset
+	if info := trending[*chatID]; info != nil {
+		info.StopAutoReset()
+		return message.Text{"Counter has been resetted. Use /start to turn auto-reset on", nil}
+	}
+
+	return message.Text{"I'm not listening this group. Use /start to start catching", nil}
 }
 
 func extractGroupID(msg *message.UpdateMessage) *int64 {
@@ -93,35 +196,34 @@ func extractGroupID(msg *message.UpdateMessage) *int64 {
 
 // Show trending hashtags
 func showHandler(bot *robot.Bot, update *message.Update) message.Any {
-
-	// controls and set trend to the trending hashtags of the current group chat
-	var trend map[string]int
-	if chatID := extractGroupID(update.Message); chatID == nil {
+	// Get the chatID of the current group chat
+	chatID := extractGroupID(update.Message)
+	if chatID == nil {
 		return message.Text{"You are not in a group", nil}
-	} else if trend = trending[*chatID]; trend == nil || len(trend) == 0 {
+	}
+
+	// use the ChatInfo to build the message that display the top 10 trending hashtags
+	msg := buildTrendingMessage(*trending[*chatID])
+	if msg == nil {
 		return message.Text{"No hashtag used in this group", nil}
 	}
 
-	// Sort the trending hashtag
-	keys := make([]string, 0, len(trend))
-	for key := range trend {
-		keys = append(keys, key)
-	}
-	sort.SliceStable(keys, func(i, j int) bool {
-		return trend[keys[i]] > trend[keys[j]]
-	})
+	return msg
+}
 
-	// Take the first 10 results
-	if len(keys) > 10 {
-		keys = keys[:10]
+func buildTrendingMessage(info ChatInfo) *message.Text {
+	// Take the first 10 trending hashtags
+	var trend []string = info.Trending(10)
+	if trend == nil || len(trend) == 0 {
+		return nil
 	}
 
 	// Build the final message
 	msg := "🔥 Trending hashtag:\n\n"
-	for i, tag := range keys {
-		msg += fmt.Sprint(number[i+1], " ", tag, " - used: ", trend[tag], "\n")
+	for i, tag := range trend {
+		msg += fmt.Sprint(number[i+1], " ", tag, " - used: ", info.hashtags[tag], "\n")
 	}
-	return message.Text{msg, nil}
+	return &message.Text{msg, nil}
 }
 
 func extractHashtags(text string) (tags []string) {
