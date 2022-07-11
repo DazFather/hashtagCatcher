@@ -287,14 +287,40 @@ func extractHashtags(text string) (tags []string) {
 	return
 }
 
-// Help menu
-var helpHandler = tgui.Menu{
-	Pages: []tgui.MenuPage{
-		tgui.StaticPage("Work in progress", nil),
-		tgui.StaticPage("Work in progress", nil),
-		tgui.StaticPage(
-			"This bot is still work in progress and is being developed with ❤️ by @DazFather. Feel free to contract me",
-			tgui.GenReplyMarkupOpt(nil, 1, tgui.InlineButton{Text: "Contact developer", URL: "t.me/DazFather"}),
-		),
-	},
+func genPage(lines ...string) tgui.MenuPage {
+	return tgui.StaticPage(
+		strings.Join(lines, "\n"),
+		&tgui.PageOptions{
+			DisableWebPagePreview: true,
+			ParseMode:             "Markdown",
+		},
+	)
 }
+
+// Help menu
+var helpHandler = tgui.Menu{Pages: []tgui.MenuPage{
+	// PAGE 1
+	genPage(
+		"👤 *Private commands*:",
+		"/start - Welcome message",
+		"/help - How to use the bot and it's info. What you are seeing right now",
+		"\n👥 *Group commands* (admin only):",
+		"/start - Start listening for hashtags on the current group",
+		"/show - Shows the top 10 most popular hashtags for the current group",
+		"/reset - Reset the hashtag counter and turn off auto-reset for the current group",
+	),
+
+	// PAGE 2
+	genPage(
+		"Why use this bot:",
+		"\n💸 *Free* - No payments required to use this bot. [Donations](https://paypal.me/DazFather) to the developer are still welcome",
+		"\n⏱ *Ready to go* - Just add this bot to a group to stay up-to-date with the trending hashtag.",
+		"\n🔒 *Privacy focused* - No log or referce to the sent message will be saved, there is no database and the [code is open](https://github.com/DazFather/hashtagCatcher/)",
+	),
+
+	// PAGE 3
+	genPage(
+		"This bot is still work in progress and is being developed with ❤️ by @DazFather.\n",
+		"Feel free to contract me on Telegram or [contribute to the project](https://github.com/DazFather/hashtagCatcher/)",
+	),
+}}
