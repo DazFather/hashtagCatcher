@@ -10,5 +10,5 @@ Powerade by my own framework [Parr(B)ot](https://github.com/DazFather/parrbot)
 
 ## Set-up
  - Clone this repo and build using the command "`go build`" on your terminal (make sure to have [Go](https://go.dev/) installed)
- - Use [@BotFather](https:/t.me/BotFather) to create your own bot and copy the API TOKEN
+ - Use [@BotFather](https:/t.me/BotFather) to create your own bot and copy the API TOKEN. Remember to set [privacy mode](https://core.telegram.org/bots#privacy-mode) off to be able to catch also hashtags in messages that don't start with "/"
  - Run the bot and use as argument or the API TOKEN, or save it on a _".txt"_ file and use  `--readfrom ` followed by the file path
