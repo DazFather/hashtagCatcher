@@ -95,6 +95,11 @@ var (
 	trending = map[int64]*ChatInfo{}
 	// Convert number between 0 and 10 into their emoji
 	number = [11]string{"0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"}
+	// Default page options
+	pageOpt = &tgui.PageOptions{
+		DisableWebPagePreview: true,
+		ParseMode:             "Markdown",
+	}
 )
 
 func main() {
@@ -285,40 +290,43 @@ func extractHashtags(text string) (tags []string) {
 	return
 }
 
-func genPage(lines ...string) tgui.MenuPage {
+func genPage(title string, page, tot uint8, lines ...string) tgui.MenuPage {
 	return tgui.StaticPage(
-		strings.Join(lines, "\n"),
-		&tgui.PageOptions{
-			DisableWebPagePreview: true,
-			ParseMode:             "Markdown",
-		},
+		fmt.Sprint(
+			"*", strings.ToUpper(title), "*\n\n",
+			strings.Join(lines, "\n"),
+			"\n\n` -- page ", page, "/", tot, "` 📄",
+		),
+		pageOpt,
 	)
 }
 
 // Help menu
 var helpHandler = tgui.Menu{Pages: []tgui.MenuPage{
-	// PAGE 1
-	genPage(
+	genPage("Command list", 1, 4,
 		"👤 *Private commands*:",
 		"/start - Welcome message",
 		"/help - How to use the bot and it's info. What you are seeing right now",
 		"\n👥 *Group commands* (admin only):",
-		"/start - Start listening for hashtags on the current group. By default auto-reset is on and will reset saved tags each 24h (time starts when command is sent)",
+		"/start - Start listening for hashtags on the current group and turn auto-reset on",
 		"/show - Shows the top 10 most popular hashtags for the current group",
 		"/reset - Reset the hashtag counter and turn off auto-reset for the current group",
 	),
 
-	// PAGE 2
-	genPage(
-		"Why use this bot:",
-		"\n💸 *Free* - No payments required to use this bot. [Donations](https://paypal.me/DazFather) to the developer are still welcome",
-		"\n⏱ *Ready to go* - Just add this bot to a group to stay up-to-date with the most trending hashtags",
-		"\n🔒 *Privacy focused* - No log or referce to the sent message will be saved, there is no database and the [code is open-source](https://github.com/DazFather/hashtagCatcher/)",
+	genPage("What is auto-reset mode", 2, 4,
+		"This mode will cause the reset of all saved hashtags every 24h since the last /start command has been sent.",
+		"It's on by default but you can easily turn it off using /reset and on again with /start.",
+		"When auto-reset is on the bot will show to the group the top 10 most used hashtags just before they reset",
 	),
 
-	// PAGE 3
-	genPage(
-		"This bot is still work in progress and is being developed with ❤️ by @DazFather.\n",
-		"Feel free to contact me on Telegram or [contribute to the project](https://github.com/DazFather/hashtagCatcher/)",
+	genPage("Why use this bot", 3, 4,
+		"💸 *Free* - No payments required to use this bot. [Donations](https://paypal.me/DazFather) to the developer are still welcome",
+		"\n⏱ *Ready to go* - Just add this bot to a group to stay up-to-date with the trending hashtag.",
+		"\n🔒 *Privacy focused* - No log or referce to the sent message will be saved, there is no database and the [code is open](https://github.com/DazFather/hashtagCatcher/)",
+	),
+
+	genPage("Developer info", 4, 4,
+		"This bot is still work in progress and is being actively developed with ❤️ by @DazFather.\n",
+		"Feel free to contract me on Telegram or [contribute to the project](https://github.com/DazFather/hashtagCatcher/)",
 	),
 }}
