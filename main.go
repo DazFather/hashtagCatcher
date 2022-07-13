@@ -133,10 +133,8 @@ func startHandler(bot *robot.Bot, update *message.Update) message.Any {
 
 	// Private chat: Send welcome message
 	if update.Message.Chat.Type == "private" {
-		sosPage := tgui.InlineButton{Text: "🆘 How to use me", CallbackData: "/help"}
-		m := message.Text{"🦜 Welcome!", nil}
-		m.ClipInlineKeyboard([][]tgui.InlineButton{{sosPage}})
-		return m
+		m := message.Text{"👋 Welcome!\nAdd me to your group and send /start to keep it up to date with the most used hashtags", nil}
+		return *m.ClipInlineKeyboard([][]tgui.InlineButton{{{Text: "🆘 Help & Info ℹ️", CallbackData: "/help"}}})
 	}
 
 	// Group chat: start listening for hashtags
