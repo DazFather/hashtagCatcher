@@ -27,7 +27,6 @@ var (
 )
 
 func main() {
-
 	robot.Start([]robot.Command{
 		// Define the list of commands of the bot
 		messageHandler,
@@ -44,7 +43,7 @@ var (
 	// Message hashtags extractor
 	messageHandler = robot.Command{
 		ReplyAt: message.MESSAGE,
-		CallFunc: func (bot *robot.Bot, update *message.Update) message.Any {
+		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
 			// Get the chatID of the current group chat
 			chatID := extractGroupID(update.Message)
 			if chatID == nil {
@@ -67,7 +66,7 @@ var (
 		Description: "Start the bot",
 		Trigger:     "/start",
 		ReplyAt:     message.MESSAGE,
-		CallFunc: func (bot *robot.Bot, update *message.Update) message.Any {
+		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
 			// Get the chatID of the current group chat
 			var chatID *int64 = extractGroupID(update.Message)
 
@@ -92,7 +91,7 @@ var (
 		Description: "Show trending hashtags",
 		Trigger:     "/show",
 		ReplyAt:     message.MESSAGE,
-		CallFunc:    func (bot *robot.Bot, update *message.Update) message.Any {
+		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
 			// Get the chatID of the current group chat
 			chatID := extractGroupID(update.Message)
 			if chatID == nil {
@@ -115,11 +114,11 @@ var (
 	}
 
 	// Reset the counter and disable auto-reset of hashtags
-	resetHandler = robot.Command {
+	resetHandler = robot.Command{
 		Description: "Reset saved trending hashtags and turn off auto-reset",
 		Trigger:     "/reset",
 		ReplyAt:     message.MESSAGE,
-		CallFunc: func (bot *robot.Bot, update *message.Update) message.Any {
+		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
 			// Get the chatID of the current group chat
 			chatID := extractGroupID(update.Message)
 			if chatID == nil {
@@ -251,7 +250,7 @@ func extractHashtags(text string) (tags []string) {
 }
 
 type page struct {
-	title string
+	title   string
 	caption []string
 }
 
@@ -268,12 +267,12 @@ func (p page) paginate(n, tot int) tgui.Page {
 
 func genPageMenu(trigger, description string, pages ...page) robot.Command {
 	var (
-		tot = len(pages)
+		tot  = len(pages)
 		menu = tgui.PagedMenu{Pages: make([]tgui.Page, len(pages))}
 	)
 
 	for i, p := range pages {
-		menu.Pages[i] = p.paginate(i + 1, tot)
+		menu.Pages[i] = p.paginate(i+1, tot)
 	}
 
 	return tgui.UseMenu(&menu, trigger, description)
