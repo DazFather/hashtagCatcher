@@ -20,7 +20,7 @@ var (
 	// Convert number between 0 and 10 into their emoji
 	number = [11]string{"0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"}
 	// Default page options
-	pageOpt = &tgui.EditOptions{
+	pageOpt = tgui.EditOptions{
 		DisableWebPagePreview: true,
 		ParseMode:             "Markdown",
 	}
@@ -63,7 +63,7 @@ var (
 
 	// Start command
 	startHandler = robot.Command{
-		Description: "Start the bot",
+		Description: "👤/👥 Start the bot",
 		Trigger:     "/start",
 		ReplyAt:     message.MESSAGE,
 		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
@@ -72,7 +72,11 @@ var (
 
 			// Private chat: Send welcome message
 			if update.Message.Chat.Type == "private" {
-				m := message.Text{"👋 Welcome!\nAdd me to your group and send /start to keep it up to date with the most used hashtags", nil}
+				m := message.Text{
+					"👋 Welcome " + update.Message.From.FirstName + "!\n" +
+					"Add me to your group and send /start to keep it up to date with the most used hashtags",
+					nil,
+				}
 				return *m.ClipInlineKeyboard([][]tgui.InlineButton{{tgui.InlineCaller("🆘 Help & Info ℹ️", "/help")}})
 			}
 
@@ -88,7 +92,7 @@ var (
 
 	// Shows trending hashtags
 	showHandler = robot.Command{
-		Description: "Show trending hashtags",
+		Description: "👥 Show trending hashtags in current group",
 		Trigger:     "/show",
 		ReplyAt:     message.MESSAGE,
 		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
@@ -115,7 +119,7 @@ var (
 
 	// Reset the counter and disable auto-reset of hashtags
 	resetHandler = robot.Command{
-		Description: "Reset saved trending hashtags and turn off auto-reset",
+		Description: "👥 Reset saved hashtags and turn off auto-reset",
 		Trigger:     "/reset",
 		ReplyAt:     message.MESSAGE,
 		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
@@ -143,7 +147,7 @@ var (
 	// Help menu
 	helpHandler robot.Command = genPageMenu(
 		"/help",
-		"Help menu",
+		"👤 How to use and set-up the bot and other infos",
 		page{title: "Command list", caption: []string{
 			"👤 *Private commands*:",
 			"/start - Welcome message",
@@ -164,8 +168,9 @@ var (
 			"\n🔒 *Privacy focused* - No log or referce to the sent message will be saved, there is no database and the [code is open](https://github.com/DazFather/hashtagCatcher/)",
 		}},
 		page{title: "Developer info", caption: []string{
-			"This bot is still work in progress and is being actively developed with ❤️ by @DazFather.\n",
-			"Feel free to contract me on Telegram or [contribute to the project](https://github.com/DazFather/hashtagCatcher/)",
+			"This bot is still work in progress and is being actively developed with ❤️ by @DazFather.",
+			"It is powerade by the [Parr(B)ot](https://github.com/DazFather/parrbot) framework and is written in [Go](https://go.dev/)",
+			"Feel free to contact me on Telegram or [contribute to the project](https://github.com/DazFather/hashtagCatcher/)",
 		}},
 	)
 )
@@ -261,7 +266,7 @@ func (p page) paginate(n, tot int) tgui.Page {
 			strings.Join(p.caption, "\n"),
 			"\n\n` -- page ", n, "/", tot, "` 📄",
 		),
-		pageOpt,
+		&pageOpt,
 	)
 }
 
