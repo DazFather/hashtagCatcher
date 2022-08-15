@@ -95,7 +95,7 @@ var (
 		Description: "👥 Show trending hashtags in current group",
 		Trigger:     "/show",
 		ReplyAt:     message.MESSAGE,
-		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
+		CallFunc: func(bot *robot.Bot, update *message.Update) (msg message.Any) {
 			// Get the chatID of the current group chat
 			chatID := extractGroupID(update.Message)
 			if chatID == nil {
@@ -108,12 +108,14 @@ var (
 			}
 
 			// use the ChatInfo to build the message that display the top 10 trending hashtags
-			msg := buildTrendingMessage(*trending[*chatID])
+			if groupTrends := trending[*chatID]; groupTrends != nil {
+				msg = buildTrendingMessage(*groupTrends)
+			}
 			if msg == nil {
-				return message.Text{"No hashtag used in this group", nil}
+				msg = message.Text{"No hashtag used in this group", nil}
 			}
 
-			return msg
+			return
 		},
 	}
 
