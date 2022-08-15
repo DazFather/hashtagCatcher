@@ -27,14 +27,14 @@ var (
 )
 
 func main() {
-	robot.Start([]robot.Command{
+	robot.Start(
 		// Define the list of commands of the bot
 		messageHandler,
 		startHandler,
 		showHandler,
 		resetHandler,
 		helpHandler,
-	})
+	)
 }
 
 // Command handlers
@@ -207,7 +207,7 @@ func isFromAdmin(msg message.UpdateMessage) bool {
 		return false
 	}
 
-	res, err := message.GetAPI().GetChatMember(msg.Chat.ID, msg.From.ID)
+	res, err := message.API().GetChatMember(msg.Chat.ID, msg.From.ID)
 	if err != nil {
 		return false
 	}
