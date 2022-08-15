@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
+	"unicode/utf16"
 
 	"github.com/DazFather/parrbot/message"
 	"github.com/DazFather/parrbot/robot"
@@ -51,7 +51,7 @@ var (
 			}
 
 			// Extract the hashtags from message and save them on ChatInfo of current group
-			tags := extractHashtags(update.Message.Text)
+			tags := extractHashtags(update.Message)
 
 			if watcher := trending[*chatID]; watcher != nil {
 				watcher.Save(tags...)
@@ -232,25 +232,15 @@ func buildTrendingMessage(info ChatInfo) *message.Text {
 	return &message.Text{msg, nil}
 }
 
-func extractHashtags(text string) (tags []string) {
-	// search hashtag using regex and retive a list of indexes for the results
-	pattern := regexp.MustCompile(`#\w+`)
-	var found = pattern.FindAllStringIndex(text, -1)
-	if found == nil {
-		return
+func extractHashtags(msg *message.UpdateMessage) (tags []string) {
+	if msg == nil {
+		return nil
 	}
-
-	// Check if the message start with an hashtag
-	if startAt := found[0][0]; startAt == 0 {
-		tags = append(tags, text[startAt:found[0][1]])
-		found = found[1:]
-	}
-
-	// Check for each result found if berofore "#" there is a white space
-	for _, position := range found {
-		min, max := position[0], position[1]
-		if match, _ := regexp.MatchString(`\s`, string(text[min-1])); match {
-			tags = append(tags, text[min:max])
+	var text = utf16.Encode([]rune(msg.Text))
+	for _, entity := range msg.Entities {
+		if entity.Type == "hashtag" {
+			tag := string(utf16.Decode(text[entity.Offset : entity.Offset + entity.Length]))
+			tags = append(tags, strings.ToLower(tag))
 		}
 	}
 	return
