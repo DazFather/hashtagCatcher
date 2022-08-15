@@ -40,7 +40,7 @@ func main() {
 // Command handlers
 var (
 
-	// Message hashtags extractor
+	// Message hashtags extractor - extract and save hashtags sent in a group
 	messageHandler = robot.Command{
 		ReplyAt: message.MESSAGE,
 		CallFunc: func(bot *robot.Bot, update *message.Update) message.Any {
@@ -61,7 +61,7 @@ var (
 		},
 	}
 
-	// Start command
+	// Start command - welcome user in private chat or initialize current group if sent by admin
 	startHandler = robot.Command{
 		Description: "👤/👥 Start the bot",
 		Trigger:     "/start",
@@ -74,7 +74,7 @@ var (
 			if update.Message.Chat.Type == "private" {
 				m := message.Text{
 					"👋 Welcome " + update.Message.From.FirstName + "!\n" +
-					"Add me to your group and send /start to keep it up to date with the most used hashtags",
+						"Add me to your group and send /start to keep it up to date with the most used hashtags",
 					nil,
 				}
 				return *m.ClipInlineKeyboard([][]tgui.InlineButton{{tgui.InlineCaller("🆘 Help & Info ℹ️", "/help")}})
@@ -90,7 +90,7 @@ var (
 		},
 	}
 
-	// Shows trending hashtags
+	// Shows trending hashtags - shows the 10 top trending hashtags in current group
 	showHandler = robot.Command{
 		Description: "👥 Show trending hashtags in current group",
 		Trigger:     "/show",
@@ -144,7 +144,7 @@ var (
 		},
 	}
 
-	// Help menu
+	// Help menu - shows help pages (just on provate chat)
 	helpHandler robot.Command = genPageMenu(
 		"/help",
 		"👤 How to use and set-up the bot and other infos",
