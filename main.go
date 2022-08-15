@@ -109,7 +109,9 @@ var (
 
 			// use the ChatInfo to build the message that display the top 10 trending hashtags
 			if groupTrends := trending[*chatID]; groupTrends != nil {
-				msg = buildTrendingMessage(*groupTrends)
+				if m := buildTrendingMessage(*groupTrends); m != nil {
+					msg = *m
+				}
 			}
 			if msg == nil {
 				msg = message.Text{"No hashtag used in this group", nil}
@@ -192,7 +194,7 @@ func watchGroup(groupID int64, autoReset bool) {
 
 	info.SetAutoReset(RESET_TIME, func(info ChatInfo) {
 		if msg := buildTrendingMessage(info); msg != nil {
-			msg.Send(groupID)
+			*msg.Send(groupID)
 		}
 	})
 }
