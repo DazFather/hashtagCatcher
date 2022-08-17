@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"unicode/utf16"
 
 	"github.com/DazFather/parrbot/message"
 	"github.com/DazFather/parrbot/robot"
@@ -51,10 +50,8 @@ var (
 			}
 
 			// Extract the hashtags from message and save them on ChatInfo of current group
-			tags := extractHashtags(update.Message)
-
 			if watcher := trending[*chatID]; watcher != nil {
-				watcher.Save(tags...)
+				watcher.Save(update.Message.ExtractEntitiesOfType("hashtag")...)
 			}
 
 			return nil
@@ -194,7 +191,7 @@ func watchGroup(groupID int64, autoReset bool) {
 
 	info.SetAutoReset(RESET_TIME, func(info ChatInfo) {
 		if msg := buildTrendingMessage(info); msg != nil {
-			*msg.Send(groupID)
+			msg.Send(groupID)
 		}
 	})
 }
@@ -232,20 +229,6 @@ func buildTrendingMessage(info ChatInfo) *message.Text {
 		msg += fmt.Sprint(number[i+1], " ", tag, " - used: ", info.hashtags[tag], "\n")
 	}
 	return &message.Text{msg, nil}
-}
-
-func extractHashtags(msg *message.UpdateMessage) (tags []string) {
-	if msg == nil {
-		return nil
-	}
-	var text = utf16.Encode([]rune(msg.Text))
-	for _, entity := range msg.Entities {
-		if entity.Type == "hashtag" {
-			tag := string(utf16.Decode(text[entity.Offset : entity.Offset + entity.Length]))
-			tags = append(tags, strings.ToLower(tag))
-		}
-	}
-	return
 }
 
 type page struct {
