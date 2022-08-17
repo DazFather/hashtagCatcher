@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/DazFather/hashtagCatcher)](https://goreportcard.com/report/github.com/DazFather/hashtagCatcher)
+
 # Hashtag Catcher
 
 Telegram bot for catching the most trending hashtags on a group chat.
