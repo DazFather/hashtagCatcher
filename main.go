@@ -167,9 +167,11 @@ var (
 			"/reset - Reset the hashtag counter and turn off auto-reset for the current group",
 		}},
 		page{title: "What is auto-reset mode", caption: []string{
-			"This mode will cause the reset of all saved hashtags every 24h since the last /start command has been sent.",
-			"It's on by default but you can easily turn it off using /reset and on again with /start.",
-			"When auto-reset is on the bot will show to the group the top 10 most used hashtags just before they reset",
+			"This mode will cause the reset of all saved hashtags every regular time interval, counter will start when /start command is sent on group.",
+			"By default the time interval is of " + fmt.Sprnt(DEFAULT_RESET_TIME) + ", but it can be specified when the command is sent. ex: \"/start 48h3m20s\"",
+			"If \"0\" is used as time interval auto-reset mode will not be active.",
+			"When auto-reset is on the bot will also show to the group the top 10 most used hashtags just before they reset.\n",
+			"Use /reset to turn off the auto-reset mode and delete all saved hashtags. Send /start to turn it on again",
 		}},
 		page{title: "Why use this bot", caption: []string{
 			"💸 *Free* - No payments required to use this bot. [Donations](https://paypal.me/DazFather) to the developer are still welcome",
