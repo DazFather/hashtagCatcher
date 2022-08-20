@@ -119,7 +119,7 @@ var (
 				}
 			}
 			if msg == nil {
-				msg = message.Text{"No hashtag used in this group", nil}
+				msg = message.Text{"No recent hashtag used in this group", nil}
 			}
 
 			return
@@ -168,7 +168,7 @@ var (
 		}},
 		page{title: "What is auto-reset mode", caption: []string{
 			"This mode will cause the reset of all saved hashtags every regular time interval, counter will start when /start command is sent on group.",
-			"By default the time interval is of " + fmt.Sprnt(DEFAULT_RESET_TIME) + ", but it can be specified when the command is sent. ex: \"/start 48h3m20s\"",
+			"By default the time interval is of " + fmt.Sprint(DEFAULT_RESET_TIME) + ", but it can be specified when the command is sent. ex: \"/start 48h3m20s\"",
 			"If \"0\" is used as time interval auto-reset mode will not be active.",
 			"When auto-reset is on the bot will also show to the group the top 10 most used hashtags just before they reset.\n",
 			"Use /reset to turn off the auto-reset mode and delete all saved hashtags. Send /start to turn it on again",
