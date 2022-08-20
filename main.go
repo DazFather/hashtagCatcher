@@ -10,8 +10,14 @@ import (
 	"github.com/DazFather/parrbot/tgui"
 )
 
-// Set default auto-reset of hashtags time to 24 Hours
-const RESET_TIME time.Duration = 24 * time.Hour
+const (
+	// Default auto-reset of hashtags: every 24 hours
+	DEFAULT_RESET_TIME time.Duration = 24 * time.Hour
+	// Max. custom auto-reset of hashtags: 1 year
+	MAX_RESET_TIME                   = 8766 * time.Hour
+	// Min. custom auto-reset of hashtags: 1 hour
+	MIN_RESET_TIME                   = 1 * time.Hour
+)
 
 var (
 	// Map groupID -> ChatInfo
@@ -81,17 +87,28 @@ var (
 			if !isFromAdmin(*update.Message) {
 				return nil
 			}
-			var timer *time.Duration
+			var timer time.Duration = DEFAULT_RESET_TIME
 			if payload := strings.Split(update.Message.Text, " "); len(payload) > 1 {
 				t, err := time.ParseDuration(strings.TrimSpace(payload[1]))
 				if err != nil {
-					return message.Text{"Invalid time unit, please use format like this \"3h5m\" to indicate 3 hours and 5 minutes", nil}
+					return message.Text{"❌ Invalid time unit: wrong format, use something like this \"3h5m\" to indicate 3 hours and 5 minutes", nil}
 				}
-				timer = &t
+				if t > MAX_RESET_TIME {
+					return message.Text{"❌ Invalid time unit: duration too long, max avaiable is " + fmt.Sprint(MAX_RESET_TIME), nil}
+				} else if t < MIN_RESET_TIME && t != 0 {
+					return message.Text{"❌ Invalid time unit: duration too short, min avaiable is " + fmt.Sprint(MIN_RESET_TIME) + ". Use 0 to disable auto-reset", nil}
+				}
+				timer = t
 			}
 			watchGroup(*chatID, timer)
 
-			return message.Text{"Group setted!👌 Now I will start catching all the #hashtags for you", nil}
+			var text string = "Group setted!👌 Now I will start catching all the #hashtags for you\nAuto-reset: "
+			if timer != 0 {
+				text += "ON - every " + fmt.Sprint(timer)
+			} else {
+				text += "OFF - use /show and /reset to show or reset your hashtags"
+			}
+			return message.Text{text, nil}
 		},
 	}
 
@@ -188,22 +205,18 @@ var (
 
 /* --- UTILITY --- */
 
-func watchGroup(groupID int64, autoReset *time.Duration) {
+func watchGroup(groupID int64, autoReset time.Duration) {
 	var info *ChatInfo = trending[groupID]
 	if info == nil {
 		info = new(ChatInfo)
 		trending[groupID] = info
 	}
 
-	if autoReset == nil {
-		autoReset = new(time.Duration)
-		*autoReset = DEFAULT_RESET_TIME
-	}
-	if *autoReset == 0 {
+	if autoReset == 0 {
 		return
 	}
 
-	info.SetAutoReset(*autoReset, func(info ChatInfo) {
+	info.SetAutoReset(autoReset, func(info ChatInfo) {
 		if msg := buildTrendingMessage(info); msg != nil {
 			msg.Send(groupID)
 		}
