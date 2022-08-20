@@ -82,8 +82,8 @@ var (
 				return nil
 			}
 			var timer *time.Duration
-			if payload := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/start")); payload != "" {
-				t, err := time.ParseDuration(payload)
+			if payload := strings.Split(update.Message.Text, " "); len(payload) > 1 {
+				t, err := time.ParseDuration(strings.TrimSpace(payload[1]))
 				if err != nil {
 					return message.Text{"Invalid time unit, please use format like this \"3h5m\" to indicate 3 hours and 5 minutes", nil}
 				}
