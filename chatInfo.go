@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"sort"
 	"time"
 )
@@ -46,7 +47,7 @@ func (i *ChatInfo) Save(tags ...string) {
 	}
 
 	for _, tag := range tags {
-		i.hashtags[tag]++
+		i.hashtags[strings.ToLower(tag)]++
 	}
 }
 
