@@ -81,7 +81,15 @@ var (
 			if !isFromAdmin(*update.Message) {
 				return nil
 			}
-			watchGroup(*chatID, true)
+			var timer *time.Duration
+			if payload := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/start")); payload != "" {
+				t, err := time.ParseDuration(payload)
+				if err != nil {
+					return message.Text{"Invalid time unit, please use format like this \"3h5m\" to indicate 3 hours and 5 minutes", nil}
+				}
+				timer = &t
+			}
+			watchGroup(*chatID, timer)
 
 			return message.Text{"Group setted!👌 Now I will start catching all the #hashtags for you", nil}
 		},
@@ -178,18 +186,22 @@ var (
 
 /* --- UTILITY --- */
 
-func watchGroup(groupID int64, autoReset bool) {
+func watchGroup(groupID int64, autoReset *time.Duration) {
 	var info *ChatInfo = trending[groupID]
 	if info == nil {
 		info = new(ChatInfo)
 		trending[groupID] = info
 	}
 
-	if !autoReset {
+	if autoReset == nil {
+		autoReset = new(time.Duration)
+		*autoReset = DEFAULT_RESET_TIME
+	}
+	if *autoReset == 0 {
 		return
 	}
 
-	info.SetAutoReset(RESET_TIME, func(info ChatInfo) {
+	info.SetAutoReset(*autoReset, func(info ChatInfo) {
 		if msg := buildTrendingMessage(info); msg != nil {
 			msg.Send(groupID)
 		}
